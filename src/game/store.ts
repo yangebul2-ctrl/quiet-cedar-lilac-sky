@@ -619,7 +619,7 @@ export const useGame = create<GameState>((set, get) => ({
 
   zoomCodex(delta) {
     if (!get().codexOpen) return;
-    const next = Math.min(4.6, Math.max(0.7, get().codexDist * (1 + delta * 0.0012)));
+    const next = Math.min(4.8, Math.max(0.52, get().codexDist * (1 + delta * 0.00115)));
     set({ codexDist: next });
   },
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CODEX_ENTRIES } from "./model-urls";
@@ -41,6 +41,8 @@ export function Codex() {
   const zoom = useGame((s) => s.zoomCodex);
   const entry = CODEX_ENTRIES.find((e) => e.id === id) ?? CODEX_ENTRIES[0];
   const drag = useRef<{ x: number; y: number; id: number } | null>(null);
+  const pts = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<number | null>(null);
   const pad = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,6 +65,24 @@ export function Codex() {
         </div>
         <div className="flex items-center gap-1">
           <LangMini />
+          <div className="flex overflow-hidden rounded-md border border-border">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t(lang, "codex.zoomOut")}
+              onClick={() => zoom(420)}
+            >
+              <Minus className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={t(lang, "codex.zoomIn")}
+              onClick={() => zoom(-420)}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </div>
           <Button variant="secondary" size="icon" aria-label={t(lang, "codex.close")} onClick={close}>
             <X className="size-4" />
           </Button>
@@ -92,9 +112,26 @@ export function Codex() {
             style={{ pointerEvents: "auto", touchAction: "none" }}
             onPointerDown={(e) => {
               (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-              drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+              pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+              if (pts.current.size === 1) {
+                drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+              } else {
+                drag.current = null;
+              }
             }}
             onPointerMove={(e) => {
+              if (!pts.current.has(e.pointerId)) return;
+              pts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+              if (pts.current.size >= 2) {
+                const [a, b] = [...pts.current.values()];
+                const d = Math.hypot(a.x - b.x, a.y - b.y);
+                if (pinch.current && pinch.current > 1) {
+                  const ratio = pinch.current / d;
+                  zoom((ratio - 1) * 900);
+                }
+                pinch.current = d;
+                return;
+              }
               const d = drag.current;
               if (!d || d.id !== e.pointerId) return;
               turn(e.clientX - d.x, e.clientY - d.y);
@@ -102,9 +139,13 @@ export function Codex() {
               d.y = e.clientY;
             }}
             onPointerUp={(e) => {
+              pts.current.delete(e.pointerId);
+              if (pts.current.size < 2) pinch.current = null;
               if (drag.current?.id === e.pointerId) drag.current = null;
             }}
-            onPointerCancel={() => {
+            onPointerCancel={(e) => {
+              pts.current.delete(e.pointerId);
+              pinch.current = null;
               drag.current = null;
             }}
           />

@@ -27,7 +27,6 @@ export function CameraDirector() {
   const grab = useGame((s) => s.valveGrab);
   const inspect = useGame((s) => s.codexOpen);
   const admire = useGame((s) => s.screen === "admire");
-  const dist = useGame((s) => s.codexDist);
   const { camera, controls } = useThree();
   const focus = useRef({ key: "", t: 0 });
   const from = useRef(new THREE.Vector3());
@@ -44,7 +43,7 @@ export function CameraDirector() {
     if (inspect) {
       const shot = CAM.inspect;
       look.current.set(shot.target[0], shot.target[1], shot.target[2]);
-      from.current.set(shot.pos[0], shot.pos[1], shot.pos[2]).sub(look.current).setLength(dist).add(look.current);
+      from.current.set(shot.pos[0], shot.pos[1], shot.pos[2]);
       camera.position.lerp(from.current, k);
       if (c?.target) {
         c.target.lerp(look.current, k);

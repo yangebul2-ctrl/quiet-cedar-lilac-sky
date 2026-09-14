@@ -616,14 +616,16 @@ function CodexStage() {
   const id = useGame((s) => s.codexId);
   const yaw = useGame((s) => s.codexYaw);
   const pitch = useGame((s) => s.codexPitch);
+  const dist = useGame((s) => s.codexDist);
   const entry = CODEX_ENTRIES.find((e) => e.id === id) ?? CODEX_ENTRIES[0];
+  const scale = 2.35 / dist;
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <circleGeometry args={[2.4, 48]} />
         <meshStandardMaterial color="#161c20" roughness={0.92} />
       </mesh>
-      <group position={[0, 0.71, 0]} rotation={[pitch, yaw, 0]}>
+      <group position={[0, 0.71, 0]} rotation={[pitch, yaw, 0]} scale={scale}>
         <group position={[0, -0.71, 0]}>
           <FittedGltf key={entry.url} url={entry.url} size={1.42} />
         </group>
