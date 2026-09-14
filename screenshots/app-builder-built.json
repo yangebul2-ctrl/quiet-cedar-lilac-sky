@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "N2 SAFE",
+      "hasCanvas": false,
+      "bodyTextLen": 233,
+      "bodyTextHash": "cad1b99964579463a34af85673a384d9954046815c9001cbabf403a6f4e24578",
+      "bodyTextPrefix": "N2 PROTOCOL N2 SAFE 질소 실린더 안전 조립 훈련. 캡을 제거하고, 레귤레이터를 시계 방향으로 체결한",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "N2 SAFE",
+      "hasCanvas": false,
+      "bodyTextLen": 208,
+      "bodyTextHash": "6f0313e67b1f1cc6c989dff5cceee1098a59054c870ffe08ca5bbf2d3c0db62b",
+      "bodyTextPrefix": "N2 PROTOCOL N2 SAFE 캡 제거 → 레귤레이터·호스 체결 → 비눗물 테스트 → 밸브 2개 개방 01 보",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
