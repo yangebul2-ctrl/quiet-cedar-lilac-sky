@@ -15,12 +15,12 @@ export function ValveHud() {
 
 function Pad({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
   return (
-    <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-4 rounded-lg border border-border bg-surface/94 p-3">
-      {children}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-fg">{title}</p>
-        <p className="mt-1 text-xs leading-snug text-muted">{hint}</p>
+    <div className="pointer-events-auto flex w-full flex-col gap-2 rounded-lg border border-border bg-surface/94 p-2.5">
+      <div className="flex items-center gap-3">
+        {children}
+        <p className="min-w-0 text-sm font-medium text-fg">{title}</p>
       </div>
+      <p className="text-xs leading-snug text-muted">{hint}</p>
     </div>
   );
 }
@@ -245,7 +245,7 @@ export function SoapHud() {
   if (!n2 && !hose) return null;
 
   return (
-    <div className="pointer-events-auto mx-auto w-full max-w-md rounded-lg border border-border bg-surface/94 p-3">
+    <div className="pointer-events-auto w-full rounded-lg border border-border bg-surface/94 p-2.5">
       <p className="text-sm font-medium text-fg">{t(lang, "soap.title", { n: n2 ? 1 : 2 })}</p>
       <p className="mt-1 text-xs text-muted">{n2 ? t(lang, "soap.n2Hint") : t(lang, "soap.hoseHint")}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">

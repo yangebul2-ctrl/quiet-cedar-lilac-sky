@@ -143,8 +143,8 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
-      <div className="flex items-start justify-between gap-2 p-3 sm:p-4">
-        <div className="min-w-0 max-w-[min(22rem,calc(100%-9rem))] rounded-lg border border-border bg-surface/90 px-3 py-2">
+      <div className="flex items-start justify-between gap-3 p-3 sm:p-4">
+        <div className="min-w-0 max-w-[min(20rem,calc(100%-11rem))] rounded-lg border border-border bg-surface/90 px-3 py-2">
           <p className="font-mono text-xs tracking-widest text-primary tabular-nums">
             STEP {String(step.index + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
             <span className="ml-2 text-subtle">{formatTime(elapsed)}</span>
@@ -152,31 +152,53 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
           <h2 className="text-sm font-semibold text-fg">{t(lang, `step.${stepId}.title`)}</h2>
           <p className="mt-1 hidden text-xs leading-snug text-muted sm:block">{t(lang, `step.${stepId}.hint`)}</p>
         </div>
-        <div className="pointer-events-auto flex shrink-0 items-center gap-1">
-          <LangToggle />
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-surface/90 px-2 py-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Shield
-                key={i}
-                className={cn("size-4", i < lives ? "text-primary" : "text-border")}
-                strokeWidth={2}
-              />
-            ))}
+        <div className="pointer-events-auto flex w-[min(22rem,54%)] shrink-0 flex-col items-stretch gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-1">
+            <LangToggle />
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-surface/90 px-2 py-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Shield
+                  key={i}
+                  className={cn("size-4", i < lives ? "text-primary" : "text-border")}
+                  strokeWidth={2}
+                />
+              ))}
+            </div>
+            <Button variant="secondary" size="icon" aria-label={t(lang, "app.codex")} onClick={onCodex}>
+              <BookOpen className="size-4" />
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              aria-label={muted ? t(lang, "app.muteOn") : t(lang, "app.muteOff")}
+              onClick={toggleMute}
+            >
+              {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+            </Button>
+            <Button variant="ghost" size="icon" aria-label={t(lang, "app.home")} onClick={reset}>
+              <RotateCcw className="size-4" />
+            </Button>
           </div>
-          <Button variant="secondary" size="icon" aria-label={t(lang, "app.codex")} onClick={onCodex}>
-            <BookOpen className="size-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label={muted ? t(lang, "app.muteOn") : t(lang, "app.muteOff")}
-            onClick={toggleMute}
-          >
-            {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-          </Button>
-          <Button variant="ghost" size="icon" aria-label={t(lang, "app.home")} onClick={reset}>
-            <RotateCcw className="size-4" />
-          </Button>
+          <div className="flex gap-1">
+            <Readout icon={Gauge} label="PSI" value={psi < 40 ? "—" : Math.round(psi).toLocaleString(loc)} />
+            <Readout icon={Droplets} label="L/min" value={flow < 0.2 ? "—" : flow.toFixed(0)} />
+            <Readout
+              icon={Wrench}
+              label={t(lang, "hud.valve")}
+              value={`${(cylOpen > 0.8 ? 1 : 0) + (flowOpen > 0.8 ? 1 : 0)}/2`}
+            />
+          </div>
+          {minigame === "tighten_reg" || minigame === "tighten_hose" ? (
+            <Tighten />
+          ) : hideAction ? (
+            <ValveHud />
+          ) : soapStep ? (
+            <SoapHud />
+          ) : (
+            <Button size="lg" className="w-full" onClick={primary}>
+              {t(lang, `step.${stepId}.action`)}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -187,7 +209,7 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
           <div
             key={item.id}
             className={cn(
-              "mx-auto w-full max-w-md rounded-md border px-3 py-2 text-sm",
+              "ml-auto w-full max-w-sm rounded-md border px-3 py-2 text-sm",
               item.kind === "ok" && "border-ok/40 bg-ok/15 text-fg",
               item.kind === "warn" && "border-warn/40 bg-warn/15 text-fg",
               item.kind === "danger" && "border-danger/40 bg-danger/15 text-fg",
@@ -197,26 +219,6 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
             {item.text}
           </div>
         ))}
-        <div className="mx-auto flex w-full max-w-md gap-2">
-          <Readout icon={Gauge} label="PSI" value={psi < 40 ? "—" : Math.round(psi).toLocaleString(loc)} />
-          <Readout icon={Droplets} label="L/min" value={flow < 0.2 ? "—" : flow.toFixed(0)} />
-          <Readout
-            icon={Wrench}
-            label={t(lang, "hud.valve")}
-            value={`${(cylOpen > 0.8 ? 1 : 0) + (flowOpen > 0.8 ? 1 : 0)}/2`}
-          />
-        </div>
-        {minigame === "tighten_reg" || minigame === "tighten_hose" ? (
-          <Tighten />
-        ) : hideAction ? (
-          <ValveHud />
-        ) : soapStep ? (
-          <SoapHud />
-        ) : (
-          <Button size="xl" className="pointer-events-auto mx-auto w-full max-w-md" onClick={primary}>
-            {t(lang, `step.${stepId}.action`)}
-          </Button>
-        )}
       </div>
     </div>
   );
@@ -232,7 +234,7 @@ function Readout({
   value: string;
 }) {
   return (
-    <div className="flex flex-1 items-center gap-2 rounded-md border border-border bg-surface/90 px-2 py-2">
+    <div className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-surface/90 px-2 py-1.5">
       <Icon className="size-3.5 text-primary" />
       <div className="min-w-0">
         <p className="text-xs text-subtle">{label}</p>
@@ -308,7 +310,8 @@ function Tighten() {
   const inner = hose ? "#3d4248" : "#6b5224";
 
   return (
-    <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-4 rounded-lg border border-border bg-surface/94 p-3">
+    <div className="pointer-events-auto flex w-full flex-col gap-2 rounded-lg border border-border bg-surface/94 p-2.5">
+      <div className="flex items-center gap-3">
       <button
         ref={host}
         type="button"
@@ -373,7 +376,8 @@ function Tighten() {
         </svg>
         <span className="absolute bottom-1 font-mono text-xs tabular-nums text-muted">{v.toFixed(0)}%</span>
       </button>
-      <div className="min-w-0 flex-1">
+      </div>
+      <div className="min-w-0">
         <p className="text-sm font-medium text-fg">{hose ? t(lang, "nut.hose") : t(lang, "nut.reg")}</p>
         <p className="mt-1 text-xs leading-snug text-muted">
           {inGreen ? t(lang, "nut.green") : over ? t(lang, "nut.over") : t(lang, "nut.hint")}
