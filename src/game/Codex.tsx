@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,10 +9,25 @@ export function Codex() {
   const id = useGame((s) => s.codexId);
   const close = useGame((s) => s.closeCodex);
   const pick = useGame((s) => s.pickCodex);
+  const turn = useGame((s) => s.turnCodex);
+  const zoom = useGame((s) => s.zoomCodex);
   const entry = CODEX_ENTRIES.find((e) => e.id === id) ?? CODEX_ENTRIES[0];
+  const drag = useRef<{ x: number; y: number; id: number } | null>(null);
+  const pad = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = pad.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      zoom(e.deltaY);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [zoom]);
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col">
+    <div className="pointer-events-none absolute inset-0 z-40 flex flex-col">
       <header className="pointer-events-auto flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface/95 px-3 py-2 sm:px-4">
         <div>
           <p className="font-mono text-xs tracking-[0.2em] text-primary">CODEX</p>
@@ -39,11 +55,33 @@ export function Codex() {
           ))}
         </nav>
         <div className="relative min-h-0 min-w-0 flex-1">
+          <div
+            className="absolute inset-0 touch-none cursor-grab active:cursor-grabbing"
+            ref={pad}
+            style={{ pointerEvents: "auto", touchAction: "none" }}
+            onPointerDown={(e) => {
+              (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+              drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+            }}
+            onPointerMove={(e) => {
+              const d = drag.current;
+              if (!d || d.id !== e.pointerId) return;
+              turn(e.clientX - d.x, e.clientY - d.y);
+              d.x = e.clientX;
+              d.y = e.clientY;
+            }}
+            onPointerUp={(e) => {
+              if (drag.current?.id === e.pointerId) drag.current = null;
+            }}
+            onPointerCancel={() => {
+              drag.current = null;
+            }}
+          />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
             <div className="rounded-md border border-border bg-surface/90 px-3 py-2">
               <p className="text-sm font-medium text-fg">{entry.title}</p>
               <p className="mt-0.5 text-xs text-muted">{entry.blurb}</p>
-              <p className="mt-1 text-[11px] text-subtle">드래그로 회전 · 스크롤·핀치로 확대</p>
+              <p className="mt-1 text-[11px] text-subtle">화면을 잡고 돌리면 360° 회전 · 스크롤로 확대</p>
             </div>
           </div>
         </div>

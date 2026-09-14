@@ -14,10 +14,12 @@ const REG_SIZE = 0.5;
 const HOSE_SIZE = 0.82;
 const WRENCH_SIZE = 0.52;
 
-type Combo = "parts" | "reg" | "hose";
+type Combo = "parts" | "reg" | "hose" | "kit" | "silence";
 
 function useCombo(): Combo {
   return useGame((s) => {
+    if (s.revealed) return "silence";
+    if (s.outletFitted && s.outletProgress > 0.88) return "kit";
     if (s.hoseFitted && s.hoseProgress > 0.88) return "hose";
     if (s.regulatorFitted && s.regulatorProgress > 0.88) return "reg";
     return "parts";
@@ -165,7 +167,7 @@ function CombinedAssembly({ url, hose }: { url: string; hose: boolean }) {
   const stepId = useGame((s) => s.stepId);
   const highlights = STEPS.find((x) => x.id === stepId)!.highlights;
   const meshActive = highlights.some((h) =>
-    ["regulator", "hose", "joint_reg", "joint_hose", "valve_cyl", "valve_flow", "hp_gauge", "flowmeter"].includes(h),
+    ["regulator", "hose", "joint_reg", "joint_hose", "valve_cyl", "valve_flow", "hp_gauge", "flowmeter", "outlet"].includes(h),
   );
   const redirect = (highlights.find((h) => h !== "wrench" && h !== "soap") ?? null) as InteractId | null;
 
@@ -295,7 +297,7 @@ function Hose() {
   const highlights = useGame((s) => STEPS.find((x) => x.id === s.stepId)!.highlights);
   const active = highlights.includes("hose") || highlights.includes("joint_hose");
 
-  if (fitted && combo === "hose") return null;
+  if (fitted && (combo === "hose" || combo === "kit" || combo === "silence")) return null;
 
   const bench: [number, number, number] = [1.46, 0.46, 0.36];
   const seated: [number, number, number] = [0.17, 1.04, 0.03];
@@ -325,6 +327,17 @@ function Hose() {
         </mesh>
       ) : null}
     </group>
+  );
+}
+
+function OutletHit() {
+  const stepId = useGame((s) => s.stepId);
+  const fitted = useGame((s) => s.outletFitted);
+  if (stepId !== "fit_outlet" || fitted) return null;
+  return (
+    <Clickable id="outlet" position={[0.42, 0.62, 0.16]}>
+      <GhostHit radius={0.24} />
+    </Clickable>
   );
 }
 
@@ -503,6 +516,27 @@ function Lights() {
   );
 }
 
+function SideChair() {
+  const revealed = useGame((s) => s.revealed);
+  const stepId = useGame((s) => s.stepId);
+  const active = stepId === "press_chair";
+  if (revealed) return null;
+  return (
+    <group position={[-0.95, 0, 0.22]} rotation={[0, 0.85, 0]}>
+      {active ? (
+        <Clickable id="chair">
+          <Highlight active>
+            <FittedGltf url={MODEL.chair} size={1.08} />
+          </Highlight>
+          <GhostHit radius={0.38} />
+        </Clickable>
+      ) : (
+        <FittedGltf url={MODEL.chair} size={1.08} />
+      )}
+    </group>
+  );
+}
+
 function Assembly() {
   const combo = useCombo();
   return (
@@ -510,8 +544,11 @@ function Assembly() {
       <CylinderRig />
       {combo === "reg" ? <CombinedAssembly url={MODEL.n2Reg} hose={false} /> : null}
       {combo === "hose" ? <CombinedAssembly url={MODEL.n2RegHose} hose /> : null}
+      {combo === "kit" ? <CombinedAssembly url={MODEL.outlet} hose /> : null}
+      {combo === "silence" ? <CombinedAssembly url={MODEL.silence} hose /> : null}
       <Regulator />
       <Hose />
+      <OutletHit />
     </>
   );
 }
@@ -519,20 +556,23 @@ function Assembly() {
 export function World() {
   const grab = useGame((s) => s.valveGrab);
   const inspect = useGame((s) => s.codexOpen);
+  const admire = useGame((s) => s.screen === "admire");
   return (
     <>
       <color attach="background" args={["#0b0f12"]} />
-      <fog attach="fog" args={["#0b0f12", 8, 16]} />
+      <fog attach="fog" args={["#0b0f12", admire ? 10 : 8, admire ? 18 : 16]} />
       <Lights />
       <OrbitControls
         makeDefault
-        enabled={!grab || inspect}
+        enabled={!inspect && !grab}
         enablePan={false}
-        minPolarAngle={0.2}
-        maxPolarAngle={Math.PI / 1.9}
-        minDistance={inspect ? 0.4 : 1.5}
-        maxDistance={inspect ? 5.5 : 5.5}
-        target={inspect ? [0, 0.62, 0] : [0.18, 0.9, 0]}
+        autoRotate={admire}
+        autoRotateSpeed={0.55}
+        minPolarAngle={admire ? 0.12 : 0.2}
+        maxPolarAngle={admire ? Math.PI / 1.45 : Math.PI / 1.9}
+        minDistance={admire ? 1.05 : 1.5}
+        maxDistance={admire ? 6.8 : 5.5}
+        target={admire ? [0.08, 0.72, 0.04] : [0.18, 0.9, 0]}
       />
       <CameraDirector />
       <Rig />
@@ -543,6 +583,7 @@ export function World() {
           <Floor />
           <Room />
           <Bench />
+          <SideChair />
           <Assembly />
           <Wrench />
           <SoapBottle />
@@ -557,6 +598,8 @@ export function World() {
 
 function CodexStage() {
   const id = useGame((s) => s.codexId);
+  const yaw = useGame((s) => s.codexYaw);
+  const pitch = useGame((s) => s.codexPitch);
   const entry = CODEX_ENTRIES.find((e) => e.id === id) ?? CODEX_ENTRIES[0];
   return (
     <group>
@@ -564,7 +607,11 @@ function CodexStage() {
         <circleGeometry args={[2.4, 48]} />
         <meshStandardMaterial color="#161c20" roughness={0.92} />
       </mesh>
-      <FittedGltf key={entry.url} url={entry.url} size={1.42} />
+      <group position={[0, 0.71, 0]} rotation={[pitch, yaw, 0]}>
+        <group position={[0, -0.71, 0]}>
+          <FittedGltf key={entry.url} url={entry.url} size={1.42} />
+        </group>
+      </group>
     </group>
   );
 }

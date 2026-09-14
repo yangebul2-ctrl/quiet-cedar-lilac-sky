@@ -10,6 +10,8 @@ export const STEP_IDS = [
   "check_flow",
   "soap_n2",
   "soap_hose",
+  "fit_outlet",
+  "press_chair",
 ] as const;
 
 export type StepId = (typeof STEP_IDS)[number];
@@ -25,7 +27,9 @@ export type InteractId =
   | "valve_cyl"
   | "valve_flow"
   | "hp_gauge"
-  | "flowmeter";
+  | "flowmeter"
+  | "outlet"
+  | "chair";
 
 export type Minigame = "tighten_reg" | "tighten_hose" | "open_cyl" | "set_flow" | null;
 
@@ -124,6 +128,22 @@ export const STEPS: {
     hint: "플로우미터 출력구와 호스가 맞닿은 연결부에 비눗물을 바르세요. 기포가 없으면 통과입니다.",
     action: "플로우미터·호스에 바르기",
     highlights: ["soap", "joint_hose"],
+  },
+  {
+    id: "fit_outlet",
+    index: 11,
+    title: "호스 말단 결합",
+    hint: "호스 끝에 투명 연결 장치를 맞춰 결합하세요. 질소가 나갈 말단입니다.",
+    action: "호스 끝에 결합",
+    highlights: ["outlet"],
+  },
+  {
+    id: "press_chair",
+    index: 12,
+    title: "최종 형태 확인",
+    hint: "실린더 옆 의자를 누르세요. 말단 결합이 끝난 뒤 최종 모델이 나타납니다.",
+    action: "의자 누르기",
+    highlights: ["chair"],
   },
 ];
 

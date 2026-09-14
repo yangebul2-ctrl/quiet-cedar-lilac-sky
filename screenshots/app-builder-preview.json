@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8080/",
+  "url": "http://127.0.0.1:8081/",
   "viewports": {
     "desktop": {
       "width": 1280,
@@ -7,9 +7,9 @@
       "status": 200,
       "title": "N2 SAFE",
       "hasCanvas": false,
-      "bodyTextLen": 220,
-      "bodyTextHash": "a8aeb14001c82b1219dc6d0aecedb9e7fd8e910a7b74f4a8ed7f2f5b91bcd605",
-      "bodyTextPrefix": "N2 PROTOCOL N2 SAFE 질소 실린더 안전 조립 훈련. 캡을 제거하고, 레귤레이터를 시계 방향으로 체결한",
+      "bodyTextLen": 0,
+      "bodyTextHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bodyTextPrefix": "",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],
@@ -21,9 +21,9 @@
       "status": 200,
       "title": "N2 SAFE",
       "hasCanvas": false,
-      "bodyTextLen": 89,
-      "bodyTextHash": "bc7dee4746026fddf6cc7f3e0999c76c57b4258657a657a36af7397a4881ba33",
-      "bodyTextPrefix": "N2 PROTOCOL N2 SAFE 캡 제거 → 레귤레이터·호스 체결 → 비눗물 테스트 → 밸브 2개 개방 훈련 시",
+      "bodyTextLen": 95,
+      "bodyTextHash": "88d098b89f7773b3e3d77304f42c87453ea69f975364565d5fa0c46a03569450",
+      "bodyTextPrefix": "N2 PROTOCOL N2 SAFE 캡 제거 → 레귤레이터·호스 체결 → 밸브 2개 개방 → 비눗물 테스트 훈련 시",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],

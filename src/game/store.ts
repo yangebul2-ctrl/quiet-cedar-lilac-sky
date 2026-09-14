@@ -15,7 +15,7 @@ import {
 } from "./steps";
 import { setMuted, sfxPlay, unlockAudio } from "./audio";
 
-export type Screen = "title" | "play" | "fail" | "pass";
+export type Screen = "title" | "play" | "fail" | "pass" | "admire";
 
 export type Toast = { id: number; text: string; kind: "info" | "ok" | "warn" | "danger" };
 
@@ -41,6 +41,9 @@ type GameState = {
   regulatorProgress: number;
   hoseFitted: boolean;
   hoseProgress: number;
+  outletFitted: boolean;
+  outletProgress: number;
+  revealed: boolean;
   tightnessReg: number;
   tightnessHose: number;
   soap: Record<Joint, boolean>;
@@ -55,6 +58,9 @@ type GameState = {
   valveGrab: null | "cyl" | "flow" | "nut";
   codexOpen: boolean;
   codexId: string;
+  codexYaw: number;
+  codexPitch: number;
+  codexDist: number;
 
   start: () => void;
   reset: () => void;
@@ -79,6 +85,10 @@ type GameState = {
   openCodex: () => void;
   closeCodex: () => void;
   pickCodex: (id: string) => void;
+  turnCodex: (dx: number, dy: number) => void;
+  zoomCodex: (delta: number) => void;
+  openAdmire: () => void;
+  closeAdmire: () => void;
 };
 
 let toastSeq = 1;
@@ -90,6 +100,9 @@ const initialAssembly = {
   regulatorProgress: 0,
   hoseFitted: false,
   hoseProgress: 0,
+  outletFitted: false,
+  outletProgress: 0,
+  revealed: false,
   tightnessReg: 0,
   tightnessHose: 0,
   soap: { reg: false, hose: false } as Record<Joint, boolean>,
@@ -160,6 +173,9 @@ export const useGame = create<GameState>((set, get) => ({
   failTitle: "",
   codexOpen: false,
   codexId: "cylinder",
+  codexYaw: 0.35,
+  codexPitch: 0.12,
+  codexDist: 2.35,
   ...initialAssembly,
 
   start() {
@@ -205,6 +221,7 @@ export const useGame = create<GameState>((set, get) => ({
     let capProgress = s.capProgress;
     let regulatorProgress = s.regulatorProgress;
     let hoseProgress = s.hoseProgress;
+    let outletProgress = s.outletProgress;
     let wrenchSwing = s.wrenchSwing;
     let psi = s.psi;
     let gasLeak = s.gasLeak;
@@ -214,6 +231,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (s.capOff) capProgress = Math.min(1, capProgress + dt * 2.2);
     if (s.regulatorFitted) regulatorProgress = Math.min(1, regulatorProgress + dt * 2.0);
     if (s.hoseFitted) hoseProgress = Math.min(1, hoseProgress + dt * 2.0);
+    if (s.outletFitted) outletProgress = Math.min(1, outletProgress + dt * 2.0);
     wrenchSwing = Math.max(0, wrenchSwing - dt * 2.2);
     gasLeak = Math.max(0, gasLeak - dt * 0.35);
     bubbles = Math.max(0, bubbles - dt * 0.5);
@@ -221,7 +239,7 @@ export const useGame = create<GameState>((set, get) => ({
     const targetPsi = s.cylOpen > 0.8 ? TARGET_PSI : s.cylOpen * TARGET_PSI * 0.7;
     psi += (targetPsi - psi) * (1 - Math.exp(-3.2 * dt));
 
-    set({ elapsed, capProgress, regulatorProgress, hoseProgress, wrenchSwing, psi, trauma, gasLeak, bubbles });
+    set({ elapsed, capProgress, regulatorProgress, hoseProgress, outletProgress, wrenchSwing, psi, trauma, gasLeak, bubbles });
   },
 
   interact(id) {
@@ -333,11 +351,39 @@ export const useGame = create<GameState>((set, get) => ({
             });
           }
         } else {
-          toast(get, set, "양쪽 모두 기포 없음. 누출이 없습니다. 통과합니다.", "ok");
+          toast(get, set, "양쪽 모두 기포 없음. 호스 말단에 장치를 결합하세요.", "ok");
           window.setTimeout(() => {
             if (get().stepId === "soap_hose") advance(set, get);
           }, 650);
         }
+        break;
+      }
+      case "fit_outlet": {
+        if (!s.soap.hose) {
+          toast(get, set, "먼저 비눗물 누출 테스트를 마치세요.", "warn");
+          return;
+        }
+        if (s.outletFitted) return;
+        sfxPlay.metal();
+        set({ outletFitted: true, outletProgress: 1 });
+        toast(get, set, "호스 말단에 결합했습니다. 이제 의자를 누르세요.", "ok");
+        window.setTimeout(() => {
+          if (get().stepId === "fit_outlet") advance(set, get);
+        }, 800);
+        break;
+      }
+      case "press_chair": {
+        if (!s.outletFitted) {
+          toast(get, set, "먼저 호스 말단을 결합하세요.", "warn");
+          return;
+        }
+        if (s.revealed) return;
+        sfxPlay.ok();
+        set({ revealed: true });
+        toast(get, set, "최종 결합 형태입니다.", "ok");
+        window.setTimeout(() => {
+          if (get().stepId === "press_chair") advance(set, get);
+        }, 900);
         break;
       }
       case "open_cyl": {
@@ -542,7 +588,7 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   openCodex() {
-    set({ codexOpen: true, valveGrab: null });
+    set({ codexOpen: true, valveGrab: null, codexYaw: 0.35, codexPitch: 0.12, codexDist: 2.35 });
   },
 
   closeCodex() {
@@ -550,7 +596,31 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   pickCodex(id) {
-    set({ codexId: id });
+    set({ codexId: id, codexYaw: 0.35, codexPitch: 0.12, codexDist: 2.35 });
+  },
+
+  turnCodex(dx, dy) {
+    if (!get().codexOpen) return;
+    set({
+      codexYaw: get().codexYaw + dx * 0.008,
+      codexPitch: get().codexPitch + dy * 0.006,
+    });
+  },
+
+  zoomCodex(delta) {
+    if (!get().codexOpen) return;
+    const next = Math.min(4.6, Math.max(0.7, get().codexDist * (1 + delta * 0.0012)));
+    set({ codexDist: next });
+  },
+
+  openAdmire() {
+    if (get().screen !== "pass" && get().screen !== "admire") return;
+    set({ screen: "admire", codexOpen: false });
+  },
+
+  closeAdmire() {
+    if (get().screen !== "admire") return;
+    set({ screen: "pass" });
   },
 }));
 
@@ -573,7 +643,7 @@ declare global {
         regP: number;
         hose: boolean;
         hoseP: number;
-        combo: "parts" | "reg" | "hose";
+        combo: "parts" | "reg" | "hose" | "kit" | "silence";
       };
       snap: () => void;
       jumpValves: () => void;
@@ -602,11 +672,15 @@ if (typeof window !== "undefined") {
         hose: s.hoseFitted,
         hoseP: +s.hoseProgress.toFixed(2),
         combo:
-          s.hoseFitted && s.hoseProgress > 0.88
-            ? "hose"
-            : s.regulatorFitted && s.regulatorProgress > 0.88
-              ? "reg"
-              : "parts",
+          s.revealed
+            ? "silence"
+            : s.outletFitted && s.outletProgress > 0.88
+              ? "kit"
+              : s.hoseFitted && s.hoseProgress > 0.88
+                ? "hose"
+                : s.regulatorFitted && s.regulatorProgress > 0.88
+                  ? "reg"
+                  : "parts",
         cylOpen: +s.cylOpen.toFixed(2),
         flow: +s.flowLpm.toFixed(1),
         psi: Math.round(s.psi),
@@ -664,6 +738,8 @@ if (typeof window !== "undefined") {
         case "remove_cap":
         case "hand_fit":
         case "fit_hose":
+        case "fit_outlet":
+        case "press_chair":
           g.primary();
           break;
         case "open_flow":

@@ -4,6 +4,7 @@ import {
   BookOpen,
   Check,
   Droplets,
+  Eye,
   Gauge,
   RotateCcw,
   Shield,
@@ -35,6 +36,7 @@ export function Hud() {
       {screen === "title" ? <Title onCodex={openCodex} /> : null}
       {screen === "fail" ? <Fail onCodex={openCodex} /> : null}
       {screen === "pass" ? <Pass onCodex={openCodex} /> : null}
+      {screen === "admire" ? <AdmireHud /> : null}
       {screen === "play" ? <PlayHud onCodex={openCodex} /> : null}
     </>
   );
@@ -52,7 +54,7 @@ function Title({ onCodex }: { onCodex: () => void }) {
           천천히 엽니다.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted sm:hidden">
-          캡 제거 → 레귤레이터·호스 체결 → 밸브 2개 개방 → 비눗물 테스트
+          캡 제거 → 레귤레이터·호스 체결 → 밸브 2개 개방 → 비눗물 → 호스 말단 결합
         </p>
         <ol className="mt-4 hidden space-y-2 text-sm text-fg sm:block">
           {[
@@ -61,6 +63,8 @@ function Title({ onCodex }: { onCodex: () => void }) {
             "호스 연결 → 너트 조임",
             "밸브 2개 개방 · 2,000 PSI · 유량 확인",
             "비눗물: 질소·레귤레이터 → 플로우미터·호스",
+            "호스 말단 장치 결합",
+            "의자 눌러 최종 형태 확인",
           ].map((line, i) => (
             <li key={line} className="flex gap-3">
               <span className="font-mono text-xs text-primary tabular-nums">{String(i + 1).padStart(2, "0")}</span>
@@ -383,12 +387,13 @@ function Pass({ onCodex }: { onCodex: () => void }) {
   const flow = useGame((s) => s.flowLpm);
   const start = useGame((s) => s.start);
   const reset = useGame((s) => s.reset);
+  const admire = useGame((s) => s.openAdmire);
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-center bg-bg/55 p-4 sm:items-center">
       <div className="pointer-events-auto w-full max-w-md rounded-xl border border-ok/40 bg-surface p-6">
         <Check className="size-8 text-ok" />
         <h2 className="mt-3 text-2xl font-semibold text-fg">조립 완료</h2>
-        <p className="mt-2 text-sm text-muted">누출 없음. 고압·유량 정상. 질소 공급 준비됐습니다.</p>
+        <p className="mt-2 text-sm text-muted">누출 없음. 호스 말단 결합 완료. 질소 공급 준비됐습니다.</p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-md border border-border bg-raised p-3">
             <dt className="text-xs text-subtle">압력</dt>
@@ -407,8 +412,12 @@ function Pass({ onCodex }: { onCodex: () => void }) {
             <dd className="font-mono tabular-nums text-fg">{mistakes}</dd>
           </div>
         </dl>
-        <div className="mt-6 flex gap-2">
-          <Button size="lg" className="flex-1" onClick={start}>
+        <Button size="xl" className="mt-6 w-full" onClick={admire}>
+          <Eye className="size-4" />
+          완성 감상하기
+        </Button>
+        <div className="mt-2 flex gap-2">
+          <Button size="lg" variant="secondary" className="flex-1" onClick={start}>
             다시 하기
           </Button>
           <Button size="lg" variant="secondary" onClick={reset}>
@@ -419,6 +428,37 @@ function Pass({ onCodex }: { onCodex: () => void }) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AdmireHud() {
+  const close = useGame((s) => s.closeAdmire);
+  const start = useGame((s) => s.start);
+  const reset = useGame((s) => s.reset);
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
+      <header className="pointer-events-auto flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface/90 px-3 py-2 sm:px-4">
+        <div>
+          <p className="font-mono text-xs tracking-[0.2em] text-primary">GALLERY</p>
+          <h2 className="text-sm font-semibold text-fg">완성 조립 감상</h2>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button size="md" variant="secondary" onClick={close}>
+            결과
+          </Button>
+          <Button size="md" variant="secondary" onClick={start}>
+            다시
+          </Button>
+          <Button size="icon" variant="ghost" aria-label="처음으로" onClick={reset}>
+            <RotateCcw className="size-4" />
+          </Button>
+        </div>
+      </header>
+      <div className="flex-1" />
+      <p className="pointer-events-none p-3 text-center text-[11px] text-subtle">
+        천천히 자동 회전합니다 · 드래그로 둘러보기 · 스크롤로 확대
+      </p>
     </div>
   );
 }

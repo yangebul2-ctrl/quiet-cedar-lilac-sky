@@ -5,6 +5,9 @@ export const MODEL = {
   hose: "/models/hose.glb",
   n2Reg: "/models/n2-reg.glb",
   n2RegHose: "/models/n2-reg-hose.glb",
+  outlet: "/models/outlet.glb",
+  chair: "/models/chair.glb",
+  silence: "/models/silence.glb",
 } as const;
 
 export const CODEX_ENTRIES = [
@@ -43,6 +46,24 @@ export const CODEX_ENTRIES = [
     url: MODEL.n2RegHose,
     title: "질소 + 레귤레이터 + 호스",
     blurb: "호스까지 모두 연결한 완성 조립입니다.",
+  },
+  {
+    id: "outlet",
+    url: MODEL.outlet,
+    title: "호스 말단 결합 키트",
+    blurb: "호스 말단을 결합하면 이 키트로 바뀝니다.",
+  },
+  {
+    id: "chair",
+    url: MODEL.chair,
+    title: "작업 의자",
+    blurb: "산업용 실린더 옆에 두는 작업 의자입니다. 말단 결합 후 누르면 최종 형태가 나타납니다.",
+  },
+  {
+    id: "silence",
+    url: MODEL.silence,
+    title: "최종 결합 형태",
+    blurb: "말단 결합을 마친 뒤 의자를 누르면 나타나는 최종 모델입니다.",
   },
 ] as const;
 

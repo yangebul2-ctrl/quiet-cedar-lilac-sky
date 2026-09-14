@@ -12,7 +12,54 @@ import { grokPwaPlugin } from "./scripts/grok-pwa-plugin.mjs";
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
 
-/** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
+/**
+ * R3F/three must never enter the Vercel serverless graph. Shared-chunking
+ * otherwise puts jsx-runtime inside the drei bundle, so every request loads
+ * WebGL on Node and the deploy health check dies.
+ */
+function stubR3fOnSsr(): Plugin {
+  const STUB = "\0stub-r3f-ssr";
+  const CANVAS = "\0stub-game-canvas-ssr";
+  const matchPkg = (id: string) =>
+    id === "three" ||
+    id.startsWith("three/") ||
+    id === "@react-three/fiber" ||
+    id.startsWith("@react-three/fiber/") ||
+    id === "@react-three/drei" ||
+    id.startsWith("@react-three/drei/");
+  const matchCanvas = (id: string) => /(^|[./])GameCanvas(\.[jt]sx?)?$/.test(id);
+  return {
+    name: "stub-r3f-on-ssr",
+    enforce: "pre",
+    resolveId(source, _importer, options) {
+      if (!options?.ssr) return;
+      if (matchCanvas(source)) return CANVAS;
+      if (matchPkg(source)) return STUB;
+    },
+    load(id) {
+      if (id === CANVAS) {
+        return "export default function GameCanvas(){ return null; }";
+      }
+      if (id === STUB) {
+        return [
+          "export default {};",
+          "export const Canvas = () => null;",
+          "export const Html = () => null;",
+          "export const useProgress = () => ({ progress: 0 });",
+          "export const useGLTF = () => ({ scene: { clone: () => ({ traverse: () => {} }) } });",
+          "export const useFrame = () => {};",
+          "export const useThree = () => ({ camera: {}, controls: null });",
+          "export const OrbitControls = () => null;",
+          "export const ContactShadows = () => null;",
+          "export const Environment = () => null;",
+          "export const Lightformer = () => null;",
+          "export const ACESFilmicToneMapping = 0;",
+          "export const PCFShadowMap = 0;",
+        ].join("\n");
+      }
+    },
+  };
+}
 function hasGlobbedMigrations(root: string): boolean {
   try {
     return readdirSync(join(root, "migrations")).some(isMigrationFile);
@@ -158,6 +205,7 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   resolve: { tsconfigPaths: true },
   plugins: [
+    stubR3fOnSsr(),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),

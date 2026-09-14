@@ -13,6 +13,9 @@ if (typeof window !== "undefined") {
   useGLTF.preload(MODEL.hose);
   useGLTF.preload(MODEL.n2Reg);
   useGLTF.preload(MODEL.n2RegHose);
+  useGLTF.preload(MODEL.outlet);
+  useGLTF.preload(MODEL.chair);
+  useGLTF.preload(MODEL.silence);
 }
 
 function geometryBounds(root: THREE.Object3D) {
@@ -68,6 +71,9 @@ const LONG: Record<string, number> = {
   "/models/hose.glb": 1.903,
   "/models/n2-reg.glb": 1.903,
   "/models/n2-reg-hose.glb": 1.903,
+  "/models/outlet.glb": 1.901,
+  "/models/chair.glb": 1.902,
+  "/models/silence.glb": 1.902,
 };
 
 /** Sit the model on y=0 of this group and scale so its longest side equals `size`. */
