@@ -330,13 +330,29 @@ function Hose() {
   );
 }
 
-function OutletHit() {
-  const stepId = useGame((s) => s.stepId);
+function Outlet() {
   const fitted = useGame((s) => s.outletFitted);
-  if (stepId !== "fit_outlet" || fitted) return null;
+  const p = useGame((s) => s.outletProgress);
+  const combo = useCombo();
+  const highlights = useGame((s) => STEPS.find((x) => x.id === s.stepId)!.highlights);
+  const active = highlights.includes("outlet");
+  if (combo === "kit" || combo === "silence") return null;
+  const bench: [number, number, number] = [1.28, 0.46, 0.62];
+  const seated: [number, number, number] = [0.52, 0.42, 0.32];
+  const pos: [number, number, number] = fitted
+    ? [
+        bench[0] + (seated[0] - bench[0]) * p,
+        bench[1] + (seated[1] - bench[1]) * p,
+        bench[2] + (seated[2] - bench[2]) * p,
+      ]
+    : bench;
+  const rot: [number, number, number] = fitted ? [0.2 * p, -0.55 * p, 0.08 * p] : [0, 0.45, 0];
   return (
-    <Clickable id="outlet" position={[0.42, 0.62, 0.16]}>
-      <GhostHit radius={0.24} />
+    <Clickable id="outlet" position={pos} rotation={rot}>
+      <Highlight active={active}>
+        <FittedGltf url={MODEL.tangled} size={0.48} />
+      </Highlight>
+      <GhostHit radius={0.2} />
     </Clickable>
   );
 }
@@ -548,7 +564,7 @@ function Assembly() {
       {combo === "silence" ? <CombinedAssembly url={MODEL.silence} hose /> : null}
       <Regulator />
       <Hose />
-      <OutletHit />
+      <Outlet />
     </>
   );
 }

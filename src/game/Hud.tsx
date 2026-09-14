@@ -19,6 +19,7 @@ import { useGame } from "./store";
 import { unlockAudio } from "./audio";
 import { ValveHud, SoapHud } from "./ValveHud";
 import { Codex } from "./Codex";
+import { t } from "./i18n";
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -26,10 +27,44 @@ function formatTime(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+function LangToggle() {
+  const lang = useGame((s) => s.lang);
+  const setLang = useGame((s) => s.setLang);
+  return (
+    <div className="flex overflow-hidden rounded-md border border-border bg-surface/90">
+      <button
+        type="button"
+        className={cn(
+          "px-2.5 py-1.5 text-xs font-semibold",
+          lang === "ko" ? "bg-raised text-fg" : "text-muted",
+        )}
+        onClick={() => setLang("ko")}
+      >
+        한
+      </button>
+      <button
+        type="button"
+        className={cn(
+          "px-2.5 py-1.5 text-xs font-semibold tracking-wide",
+          lang === "en" ? "bg-raised text-fg" : "text-muted",
+        )}
+        onClick={() => setLang("en")}
+      >
+        EN
+      </button>
+    </div>
+  );
+}
+
 export function Hud() {
   const screen = useGame((s) => s.screen);
+  const lang = useGame((s) => s.lang);
   const codex = useGame((s) => s.codexOpen);
   const openCodex = useGame((s) => s.openCodex);
+  useEffect(() => {
+    document.documentElement.lang = lang === "en" ? "en" : "ko";
+    document.title = t(lang, "app.name");
+  }, [lang]);
   if (codex) return <Codex />;
   return (
     <>
@@ -44,33 +79,26 @@ export function Hud() {
 
 function Title({ onCodex }: { onCodex: () => void }) {
   const start = useGame((s) => s.start);
+  const lang = useGame((s) => s.lang);
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-end p-4 sm:justify-center sm:p-6">
       <div className="pointer-events-auto mx-auto w-full max-w-md rounded-xl border border-border bg-surface/92 p-5 shadow-lg sm:p-8">
-        <p className="font-mono text-xs tracking-[0.22em] text-primary">N2 PROTOCOL</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-fg sm:text-4xl">N2 SAFE</h1>
-        <p className="mt-2 hidden text-sm leading-relaxed text-muted sm:block">
-          질소 실린더 안전 조립 훈련. 캡을 제거하고, 레귤레이터를 시계 방향으로 체결한 뒤 밸브를 반시계로
-          천천히 엽니다.
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-muted sm:hidden">
-          캡 제거 → 레귤레이터·호스 체결 → 밸브 2개 개방 → 비눗물 → 호스 말단 결합
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-mono text-xs tracking-[0.22em] text-primary">{t(lang, "app.tag")}</p>
+          <LangToggle />
+        </div>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-fg sm:text-4xl">{t(lang, "app.name")}</h1>
+        <p className="mt-2 hidden text-sm leading-relaxed text-muted sm:block">{t(lang, "app.desc")}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted sm:hidden">{t(lang, "app.short")}</p>
         <ol className="mt-4 hidden space-y-2 text-sm text-fg sm:block">
-          {[
-            "보호캡 제거",
-            "레귤레이터 수체결 → 너트 조임",
-            "호스 연결 → 너트 조임",
-            "밸브 2개 개방 · 2,000 PSI · 유량 확인",
-            "비눗물: 질소·레귤레이터 → 플로우미터·호스",
-            "호스 말단 장치 결합",
-            "의자 눌러 최종 형태 확인",
-          ].map((line, i) => (
-            <li key={line} className="flex gap-3">
-              <span className="font-mono text-xs text-primary tabular-nums">{String(i + 1).padStart(2, "0")}</span>
-              <span>{line}</span>
-            </li>
-          ))}
+          {(["outline.1", "outline.2", "outline.3", "outline.4", "outline.5", "outline.6", "outline.7"] as const).map(
+            (key, i) => (
+              <li key={key} className="flex gap-3">
+                <span className="font-mono text-xs text-primary tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                <span>{t(lang, key)}</span>
+              </li>
+            ),
+          )}
         </ol>
         <Button
           size="xl"
@@ -80,13 +108,13 @@ function Title({ onCodex }: { onCodex: () => void }) {
             start();
           }}
         >
-          훈련 시작
+          {t(lang, "app.start")}
         </Button>
         <Button size="lg" variant="secondary" className="mt-2 w-full" onClick={onCodex}>
           <BookOpen className="size-4" />
-          장비 도감
+          {t(lang, "app.codex")}
         </Button>
-        <p className="mt-3 text-center text-xs text-subtle">하단 버튼으로 진행 · 드래그로 시점 이동</p>
+        <p className="mt-3 text-center text-xs text-subtle">{t(lang, "app.howto")}</p>
       </div>
     </div>
   );
@@ -94,6 +122,7 @@ function Title({ onCodex }: { onCodex: () => void }) {
 
 function PlayHud({ onCodex }: { onCodex: () => void }) {
   const stepId = useGame((s) => s.stepId);
+  const lang = useGame((s) => s.lang);
   const lives = useGame((s) => s.lives);
   const elapsed = useGame((s) => s.elapsed);
   const psi = useGame((s) => s.psi);
@@ -110,19 +139,21 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
   const hideAction =
     stepId === "open_cyl" || stepId === "check_psi" || stepId === "open_flow" || stepId === "check_flow";
   const soapStep = stepId === "soap_n2" || stepId === "soap_hose";
+  const loc = lang === "en" ? "en-US" : "ko-KR";
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
       <div className="flex items-start justify-between gap-2 p-3 sm:p-4">
-        <div className="min-w-0 max-w-[min(22rem,calc(100%-6.5rem))] rounded-lg border border-border bg-surface/90 px-3 py-2">
+        <div className="min-w-0 max-w-[min(22rem,calc(100%-9rem))] rounded-lg border border-border bg-surface/90 px-3 py-2">
           <p className="font-mono text-xs tracking-widest text-primary tabular-nums">
             STEP {String(step.index + 1).padStart(2, "0")} / {String(STEPS.length).padStart(2, "0")}
             <span className="ml-2 text-subtle">{formatTime(elapsed)}</span>
           </p>
-          <h2 className="text-sm font-semibold text-fg">{step.title}</h2>
-          <p className="mt-1 hidden text-xs leading-snug text-muted sm:block">{step.hint}</p>
+          <h2 className="text-sm font-semibold text-fg">{t(lang, `step.${stepId}.title`)}</h2>
+          <p className="mt-1 hidden text-xs leading-snug text-muted sm:block">{t(lang, `step.${stepId}.hint`)}</p>
         </div>
         <div className="pointer-events-auto flex shrink-0 items-center gap-1">
+          <LangToggle />
           <div className="flex items-center gap-1 rounded-lg border border-border bg-surface/90 px-2 py-2">
             {Array.from({ length: 3 }).map((_, i) => (
               <Shield
@@ -132,13 +163,18 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
               />
             ))}
           </div>
-          <Button variant="secondary" size="icon" aria-label="장비 도감" onClick={onCodex}>
+          <Button variant="secondary" size="icon" aria-label={t(lang, "app.codex")} onClick={onCodex}>
             <BookOpen className="size-4" />
           </Button>
-          <Button variant="secondary" size="icon" aria-label={muted ? "소리 켜기" : "소리 끄기"} onClick={toggleMute}>
+          <Button
+            variant="secondary"
+            size="icon"
+            aria-label={muted ? t(lang, "app.muteOn") : t(lang, "app.muteOff")}
+            onClick={toggleMute}
+          >
             {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
           </Button>
-          <Button variant="ghost" size="icon" aria-label="처음으로" onClick={reset}>
+          <Button variant="ghost" size="icon" aria-label={t(lang, "app.home")} onClick={reset}>
             <RotateCcw className="size-4" />
           </Button>
         </div>
@@ -147,26 +183,26 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
       <div className="min-h-0 flex-1" />
 
       <div className="flex flex-col items-stretch gap-2 p-3 sm:items-center sm:p-4">
-        {toasts.map((t) => (
+        {toasts.map((item) => (
           <div
-            key={t.id}
+            key={item.id}
             className={cn(
               "mx-auto w-full max-w-md rounded-md border px-3 py-2 text-sm",
-              t.kind === "ok" && "border-ok/40 bg-ok/15 text-fg",
-              t.kind === "warn" && "border-warn/40 bg-warn/15 text-fg",
-              t.kind === "danger" && "border-danger/40 bg-danger/15 text-fg",
-              t.kind === "info" && "border-border bg-raised text-fg",
+              item.kind === "ok" && "border-ok/40 bg-ok/15 text-fg",
+              item.kind === "warn" && "border-warn/40 bg-warn/15 text-fg",
+              item.kind === "danger" && "border-danger/40 bg-danger/15 text-fg",
+              item.kind === "info" && "border-border bg-raised text-fg",
             )}
           >
-            {t.text}
+            {item.text}
           </div>
         ))}
         <div className="mx-auto flex w-full max-w-md gap-2">
-          <Readout icon={Gauge} label="PSI" value={psi < 40 ? "—" : Math.round(psi).toLocaleString("ko-KR")} />
+          <Readout icon={Gauge} label="PSI" value={psi < 40 ? "—" : Math.round(psi).toLocaleString(loc)} />
           <Readout icon={Droplets} label="L/min" value={flow < 0.2 ? "—" : flow.toFixed(0)} />
           <Readout
             icon={Wrench}
-            label="밸브"
+            label={t(lang, "hud.valve")}
             value={`${(cylOpen > 0.8 ? 1 : 0) + (flowOpen > 0.8 ? 1 : 0)}/2`}
           />
         </div>
@@ -178,7 +214,7 @@ function PlayHud({ onCodex }: { onCodex: () => void }) {
           <SoapHud />
         ) : (
           <Button size="xl" className="pointer-events-auto mx-auto w-full max-w-md" onClick={primary}>
-            {step.action}
+            {t(lang, `step.${stepId}.action`)}
           </Button>
         )}
       </div>
@@ -220,6 +256,7 @@ function Tighten() {
   const commit = useGame((s) => s.commitTighten);
   const close = useGame((s) => s.closeMinigame);
   const hose = minigame === "tighten_hose";
+  const lang = useGame((s) => s.lang);
   const dragging = useRef(false);
   const lastAng = useRef(0);
   const value = useRef(0);
@@ -275,7 +312,7 @@ function Tighten() {
       <button
         ref={host}
         type="button"
-        aria-label={hose ? "호스 너트 오른쪽으로 조이기" : "레귤레이터 너트 오른쪽으로 조이기"}
+        aria-label={hose ? t(lang, "nut.ariaHose") : t(lang, "nut.ariaReg")}
         className={cn(
           "relative grid size-28 shrink-0 place-items-center rounded-md border border-border bg-raised touch-none",
           grab === "nut" && "border-primary",
@@ -337,16 +374,12 @@ function Tighten() {
         <span className="absolute bottom-1 font-mono text-xs tabular-nums text-muted">{v.toFixed(0)}%</span>
       </button>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-fg">{hose ? "호스 너트" : "레귤레이터 너트"}</p>
+        <p className="text-sm font-medium text-fg">{hose ? t(lang, "nut.hose") : t(lang, "nut.reg")}</p>
         <p className="mt-1 text-xs leading-snug text-muted">
-          {inGreen
-            ? "녹색 구간입니다. 여기서 손을 떼세요."
-            : over
-              ? "너무 셉니다. 더 조이면 나사선이 손상됩니다."
-              : "시계 방향(오른쪽)으로 돌려 조이세요. 녹색에서 손을 떼세요."}
+          {inGreen ? t(lang, "nut.green") : over ? t(lang, "nut.over") : t(lang, "nut.hint")}
         </p>
         <Button variant="secondary" size="md" className="mt-2" onClick={close}>
-          취소
+          {t(lang, "app.cancel")}
         </Button>
       </div>
     </div>
@@ -358,20 +391,24 @@ function Fail({ onCodex }: { onCodex: () => void }) {
   const title = useGame((s) => s.failTitle);
   const start = useGame((s) => s.start);
   const reset = useGame((s) => s.reset);
+  const lang = useGame((s) => s.lang);
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-center bg-bg/55 p-4 sm:items-center">
       <div className="pointer-events-auto w-full max-w-md rounded-xl border border-danger/40 bg-surface p-6">
-        <AlertTriangle className="size-8 text-danger" />
-        <h2 className="mt-3 text-2xl font-semibold text-fg">{title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{reason}</p>
+        <div className="flex items-start justify-between gap-3">
+          <AlertTriangle className="size-8 text-danger" />
+          <LangToggle />
+        </div>
+        <h2 className="mt-3 text-2xl font-semibold text-fg">{t(lang, title || "fail.safety")}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{t(lang, reason)}</p>
         <div className="mt-6 flex gap-2">
           <Button size="lg" className="flex-1" onClick={start}>
-            다시 훈련
+            {t(lang, "app.retry")}
           </Button>
           <Button size="lg" variant="secondary" onClick={reset}>
-            처음으로
+            {t(lang, "app.home")}
           </Button>
-          <Button size="icon" variant="ghost" aria-label="장비 도감" onClick={onCodex}>
+          <Button size="icon" variant="ghost" aria-label={t(lang, "app.codex")} onClick={onCodex}>
             <BookOpen className="size-4" />
           </Button>
         </div>
@@ -388,42 +425,47 @@ function Pass({ onCodex }: { onCodex: () => void }) {
   const start = useGame((s) => s.start);
   const reset = useGame((s) => s.reset);
   const admire = useGame((s) => s.openAdmire);
+  const lang = useGame((s) => s.lang);
+  const loc = lang === "en" ? "en-US" : "ko-KR";
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-center bg-bg/55 p-4 sm:items-center">
       <div className="pointer-events-auto w-full max-w-md rounded-xl border border-ok/40 bg-surface p-6">
-        <Check className="size-8 text-ok" />
-        <h2 className="mt-3 text-2xl font-semibold text-fg">조립 완료</h2>
-        <p className="mt-2 text-sm text-muted">누출 없음. 호스 말단 결합 완료. 질소 공급 준비됐습니다.</p>
+        <div className="flex items-start justify-between gap-3">
+          <Check className="size-8 text-ok" />
+          <LangToggle />
+        </div>
+        <h2 className="mt-3 text-2xl font-semibold text-fg">{t(lang, "pass.title")}</h2>
+        <p className="mt-2 text-sm text-muted">{t(lang, "pass.body")}</p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-md border border-border bg-raised p-3">
-            <dt className="text-xs text-subtle">압력</dt>
-            <dd className="font-mono tabular-nums text-fg">{Math.round(psi || TARGET_PSI).toLocaleString("ko-KR")} PSI</dd>
+            <dt className="text-xs text-subtle">{t(lang, "pass.psi")}</dt>
+            <dd className="font-mono tabular-nums text-fg">{Math.round(psi || TARGET_PSI).toLocaleString(loc)} PSI</dd>
           </div>
           <div className="rounded-md border border-border bg-raised p-3">
-            <dt className="text-xs text-subtle">유량</dt>
+            <dt className="text-xs text-subtle">{t(lang, "pass.flow")}</dt>
             <dd className="font-mono tabular-nums text-fg">{(flow || TARGET_FLOW).toFixed(0)} L/min</dd>
           </div>
           <div className="rounded-md border border-border bg-raised p-3">
-            <dt className="text-xs text-subtle">시간</dt>
+            <dt className="text-xs text-subtle">{t(lang, "pass.time")}</dt>
             <dd className="font-mono tabular-nums text-fg">{formatTime(elapsed)}</dd>
           </div>
           <div className="rounded-md border border-border bg-raised p-3">
-            <dt className="text-xs text-subtle">실수</dt>
+            <dt className="text-xs text-subtle">{t(lang, "pass.mistakes")}</dt>
             <dd className="font-mono tabular-nums text-fg">{mistakes}</dd>
           </div>
         </dl>
         <Button size="xl" className="mt-6 w-full" onClick={admire}>
           <Eye className="size-4" />
-          완성 감상하기
+          {t(lang, "pass.admire")}
         </Button>
         <div className="mt-2 flex gap-2">
           <Button size="lg" variant="secondary" className="flex-1" onClick={start}>
-            다시 하기
+            {t(lang, "app.again")}
           </Button>
           <Button size="lg" variant="secondary" onClick={reset}>
-            처음으로
+            {t(lang, "app.home")}
           </Button>
-          <Button size="icon" variant="ghost" aria-label="장비 도감" onClick={onCodex}>
+          <Button size="icon" variant="ghost" aria-label={t(lang, "app.codex")} onClick={onCodex}>
             <BookOpen className="size-4" />
           </Button>
         </div>
@@ -436,29 +478,29 @@ function AdmireHud() {
   const close = useGame((s) => s.closeAdmire);
   const start = useGame((s) => s.start);
   const reset = useGame((s) => s.reset);
+  const lang = useGame((s) => s.lang);
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
       <header className="pointer-events-auto flex shrink-0 items-center justify-between gap-3 border-b border-border bg-surface/90 px-3 py-2 sm:px-4">
         <div>
           <p className="font-mono text-xs tracking-[0.2em] text-primary">GALLERY</p>
-          <h2 className="text-sm font-semibold text-fg">완성 조립 감상</h2>
+          <h2 className="text-sm font-semibold text-fg">{t(lang, "admire.title")}</h2>
         </div>
         <div className="flex items-center gap-1">
+          <LangToggle />
           <Button size="md" variant="secondary" onClick={close}>
-            결과
+            {t(lang, "app.result")}
           </Button>
           <Button size="md" variant="secondary" onClick={start}>
-            다시
+            {t(lang, "app.againShort")}
           </Button>
-          <Button size="icon" variant="ghost" aria-label="처음으로" onClick={reset}>
+          <Button size="icon" variant="ghost" aria-label={t(lang, "app.home")} onClick={reset}>
             <RotateCcw className="size-4" />
           </Button>
         </div>
       </header>
       <div className="flex-1" />
-      <p className="pointer-events-none p-3 text-center text-[11px] text-subtle">
-        천천히 자동 회전합니다 · 드래그로 둘러보기 · 스크롤로 확대
-      </p>
+      <p className="pointer-events-none p-3 text-center text-[11px] text-subtle">{t(lang, "admire.hint")}</p>
     </div>
   );
 }

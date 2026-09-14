@@ -8,6 +8,7 @@ export const MODEL = {
   outlet: "/models/outlet.glb",
   chair: "/models/chair.glb",
   silence: "/models/silence.glb",
+  tangled: "/models/tangled.glb",
 } as const;
 
 export const CODEX_ENTRIES = [
@@ -48,22 +49,28 @@ export const CODEX_ENTRIES = [
     blurb: "호스까지 모두 연결한 완성 조립입니다.",
   },
   {
+    id: "tangled",
+    url: MODEL.tangled,
+    title: "나가기백",
+    blurb: "작업대에 올려 두는 나가기백입니다. 호스 끝에 결합합니다.",
+  },
+  {
     id: "outlet",
     url: MODEL.outlet,
-    title: "호스 말단 결합 키트",
-    blurb: "호스 말단을 결합하면 이 키트로 바뀝니다.",
+    title: "나가기 준비",
+    blurb: "나가기백을 결합하면 이 모습으로 바뀝니다.",
   },
   {
     id: "chair",
     url: MODEL.chair,
     title: "작업 의자",
-    blurb: "산업용 실린더 옆에 두는 작업 의자입니다. 말단 결합 후 누르면 최종 형태가 나타납니다.",
+    blurb: "실린더 옆 의자입니다. 나가기백 결합 후 누르면 나가기가 나타납니다.",
   },
   {
     id: "silence",
     url: MODEL.silence,
-    title: "최종 결합 형태",
-    blurb: "말단 결합을 마친 뒤 의자를 누르면 나타나는 최종 모델입니다.",
+    title: "나가기",
+    blurb: "나가기백을 결합한 뒤 의자를 누르면 나타나는 최종 모습입니다.",
   },
 ] as const;
 

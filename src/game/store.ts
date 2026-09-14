@@ -14,6 +14,7 @@ import {
   type StepId,
 } from "./steps";
 import { setMuted, sfxPlay, unlockAudio } from "./audio";
+import { persistLang, readSavedLang, t, type Lang } from "./i18n";
 
 export type Screen = "title" | "play" | "fail" | "pass" | "admire";
 
@@ -30,6 +31,7 @@ type GameState = {
   startedAt: number;
   elapsed: number;
   muted: boolean;
+  lang: Lang;
   toasts: Toast[];
   trauma: number;
   failReason: string;
@@ -89,6 +91,7 @@ type GameState = {
   zoomCodex: (delta: number) => void;
   openAdmire: () => void;
   closeAdmire: () => void;
+  setLang: (lang: Lang) => void;
 };
 
 let toastSeq = 1;
@@ -117,8 +120,14 @@ const initialAssembly = {
   valveGrab: null as null | "cyl" | "flow" | "nut",
 };
 
-function toast(get: () => GameState, set: (p: Partial<GameState>) => void, text: string, kind: Toast["kind"] = "info") {
-  const item: Toast = { id: toastSeq++, text, kind };
+function toast(
+  get: () => GameState,
+  set: (p: Partial<GameState>) => void,
+  key: string,
+  kind: Toast["kind"] = "info",
+  vars?: Record<string, string | number>,
+) {
+  const item: Toast = { id: toastSeq++, text: t(get().lang, key, vars), kind };
   set({ toasts: [...get().toasts.slice(-3), item] });
   window.setTimeout(() => {
     const cur = get();
@@ -126,7 +135,7 @@ function toast(get: () => GameState, set: (p: Partial<GameState>) => void, text:
   }, 2800);
 }
 
-function strike(get: () => GameState, set: (p: Partial<GameState>) => void, reason: string, fatal = false) {
+function strike(get: () => GameState, set: (p: Partial<GameState>) => void, key: string, fatal = false) {
   const lives = get().lives - 1;
   sfxPlay.alarm();
   set({ lives, mistakes: get().mistakes + 1, trauma: Math.min(1, get().trauma + (fatal ? 0.85 : 0.45)) });
@@ -134,14 +143,14 @@ function strike(get: () => GameState, set: (p: Partial<GameState>) => void, reas
     sfxPlay.hiss(1.4);
     set({
       screen: "fail",
-      failTitle: "안전 절차 위반",
-      failReason: reason,
+      failTitle: "fail.safety",
+      failReason: key,
       gasLeak: 1,
       minigame: null,
     });
     return true;
   }
-  toast(get, set, reason, "danger");
+  toast(get, set, key, "danger");
   return false;
 }
 
@@ -155,7 +164,7 @@ function advance(set: (p: Partial<GameState>) => void, get: () => GameState) {
   }
   const next = STEP_IDS[i + 1];
   set({ stepId: next, minigame: null });
-  toast(get, set, STEPS[i + 1].title, "ok");
+  toast(get, set, `step.${next}.title`, "ok");
 }
 
 export const useGame = create<GameState>((set, get) => ({
@@ -167,6 +176,7 @@ export const useGame = create<GameState>((set, get) => ({
   startedAt: 0,
   elapsed: 0,
   muted: false,
+  lang: readSavedLang(),
   toasts: [],
   trauma: 0,
   failReason: "",
@@ -196,7 +206,7 @@ export const useGame = create<GameState>((set, get) => ({
       codexOpen: false,
       ...initialAssembly,
     });
-    toast(get, set, "보호캡부터 제거하세요.", "info");
+    toast(get, set, "toast.start", "info");
   },
 
   reset() {
@@ -248,7 +258,7 @@ export const useGame = create<GameState>((set, get) => ({
     const step = s.stepId;
     const highlights = STEPS.find((x) => x.id === step)!.highlights;
     if (!highlights.includes(id)) {
-      toast(get, set, "지금은 이 부품을 조작할 단계가 아닙니다.", "warn");
+      toast(get, set, "toast.wrongPart", "warn");
       sfxPlay.click();
       return;
     }
@@ -271,7 +281,7 @@ export const useGame = create<GameState>((set, get) => ({
       }
       case "hand_fit": {
         if (!s.capOff) {
-          toast(get, set, "먼저 보호캡을 제거하세요.", "warn");
+          toast(get, set, "toast.capFirst", "warn");
           return;
         }
         if (s.regulatorFitted) return;
@@ -305,7 +315,7 @@ export const useGame = create<GameState>((set, get) => ({
       }
       case "soap_n2": {
         if (s.cylOpen < 0.8 || s.flowOpen < 0.8) {
-          toast(get, set, "먼저 실린더 밸브와 유량 밸브를 여세요.", "warn");
+          toast(get, set, "toast.valvesFirst", "warn");
           return;
         }
         sfxPlay.soap();
@@ -316,12 +326,12 @@ export const useGame = create<GameState>((set, get) => ({
           bubbles: leakReg ? 1 : 0.35,
         });
         if (leakReg) {
-          strike(get, set, "질소·레귤레이터 연결부에서 기포가 발생했습니다. 레귤레이터 너트를 다시 조이세요.");
+          strike(get, set, "toast.n2Leak");
           if (get().screen === "play") {
             set({ stepId: "wrench_reg", soap: { reg: false, hose: false }, tightnessReg: 0, minigame: null });
           }
         } else {
-          toast(get, set, "질소·레귤레이터 쪽 기포 없음. 다음은 플로우미터·호스입니다.", "ok");
+          toast(get, set, "toast.n2Ok", "ok");
           window.setTimeout(() => {
             if (get().stepId === "soap_n2") advance(set, get);
           }, 550);
@@ -330,7 +340,7 @@ export const useGame = create<GameState>((set, get) => ({
       }
       case "soap_hose": {
         if (!s.soap.reg) {
-          toast(get, set, "먼저 질소·레귤레이터 연결부에 비눗물을 바르세요.", "warn");
+          toast(get, set, "toast.n2SoapFirst", "warn");
           return;
         }
         sfxPlay.soap();
@@ -341,7 +351,7 @@ export const useGame = create<GameState>((set, get) => ({
           bubbles: leakHose ? 1 : 0.35,
         });
         if (leakHose) {
-          strike(get, set, "플로우미터·호스 연결부에서 기포가 발생했습니다. 호스 너트를 다시 조이세요.");
+          strike(get, set, "toast.hoseLeak");
           if (get().screen === "play") {
             set({
               stepId: "wrench_hose",
@@ -351,7 +361,7 @@ export const useGame = create<GameState>((set, get) => ({
             });
           }
         } else {
-          toast(get, set, "양쪽 모두 기포 없음. 호스 말단에 장치를 결합하세요.", "ok");
+          toast(get, set, "toast.soapDone", "ok");
           window.setTimeout(() => {
             if (get().stepId === "soap_hose") advance(set, get);
           }, 650);
@@ -360,13 +370,13 @@ export const useGame = create<GameState>((set, get) => ({
       }
       case "fit_outlet": {
         if (!s.soap.hose) {
-          toast(get, set, "먼저 비눗물 누출 테스트를 마치세요.", "warn");
+          toast(get, set, "toast.soapFirst", "warn");
           return;
         }
         if (s.outletFitted) return;
         sfxPlay.metal();
-        set({ outletFitted: true, outletProgress: 1 });
-        toast(get, set, "호스 말단에 결합했습니다. 이제 의자를 누르세요.", "ok");
+        set({ outletFitted: true });
+        toast(get, set, "toast.bagOn", "ok");
         window.setTimeout(() => {
           if (get().stepId === "fit_outlet") advance(set, get);
         }, 800);
@@ -374,45 +384,45 @@ export const useGame = create<GameState>((set, get) => ({
       }
       case "press_chair": {
         if (!s.outletFitted) {
-          toast(get, set, "먼저 호스 말단을 결합하세요.", "warn");
+          toast(get, set, "toast.bagFirst", "warn");
           return;
         }
         if (s.revealed) return;
         sfxPlay.ok();
         set({ revealed: true });
-        toast(get, set, "최종 결합 형태입니다.", "ok");
+        toast(get, set, "toast.goOut", "ok");
         window.setTimeout(() => {
           if (get().stepId === "press_chair") advance(set, get);
         }, 900);
         break;
       }
       case "open_cyl": {
-        toast(get, set, "회색 손잡이를 반시계 방향으로 꺾어 여세요.", "info");
+        toast(get, set, "toast.cylHint", "info");
         break;
       }
       case "check_psi": {
         if (s.psi < PSI_MIN) {
-          toast(get, set, "아직 압력이 충분히 오르지 않았습니다. 회색 손잡이를 끝까지 누르세요.", "warn");
+          toast(get, set, "toast.psiLow", "warn");
           return;
         }
         if (s.psi > PSI_MAX) {
-          strike(get, set, "압력 범위가 비정상입니다.", false);
+          strike(get, set, "toast.psiRange", false);
           return;
         }
-        toast(get, set, `고압 게이지 ${Math.round(s.psi).toLocaleString("ko-KR")} PSI — 2천 내외 정상.`, "ok");
+        toast(get, set, "toast.psiOk", "ok", { psi: Math.round(s.psi).toLocaleString(get().lang === "en" ? "en-US" : "ko-KR") });
         advance(set, get);
         break;
       }
       case "open_flow": {
         if (s.cylOpen < 0.8) {
-          toast(get, set, "먼저 실린더 회색 손잡이를 여세요. 밸브는 2개입니다.", "warn");
+          toast(get, set, "toast.cylThenFlow", "warn");
           return;
         }
-        toast(get, set, "금색 톱니 노브를 왼쪽으로 돌려 여세요.", "info");
+        toast(get, set, "toast.knobLeft", "info");
         break;
       }
       case "check_flow": {
-        toast(get, set, "노브를 돌려 15 L/min에 맞추세요. 왼쪽 증가 · 오른쪽 감소.", "info");
+        toast(get, set, "toast.knobSet", "info");
         break;
       }
     }
@@ -425,26 +435,26 @@ export const useGame = create<GameState>((set, get) => ({
     sfxPlay.wrench();
     set({ wrenchSwing: 1, valveGrab: null });
     if (value > OVER_TIGHT) {
-      strike(get, set, "과도하게 조였습니다. 나사선이 손상될 수 있습니다. 적당히 조이세요.");
+      strike(get, set, "toast.overTight");
       set({ minigame: null });
       return;
     }
     if (value < GREEN_MIN) {
-      toast(get, set, "헐겁습니다. 녹색 구간까지 더 조이세요.", "warn");
+      toast(get, set, "toast.tooLoose", "warn");
       sfxPlay.click();
       return;
     }
     if (value > GREEN_MAX && value <= OVER_TIGHT) {
-      toast(get, set, "조금 과하지만 허용 범위입니다.", "warn");
+      toast(get, set, "toast.aBitOver", "warn");
     } else {
-      toast(get, set, "적당히 체결되었습니다.", "ok");
+      toast(get, set, "toast.tightOk", "ok");
     }
     if (which === "reg") set({ tightnessReg: value, minigame: null, valveGrab: null });
     else set({ tightnessHose: value, minigame: null, valveGrab: null });
     const after = get();
     if (after.cylOpen > 0.8 && after.flowOpen > 0.8) {
       set({ stepId: "soap_n2" });
-      toast(get, set, "다시 비눗물을 바르세요. 질소·레귤레이터부터입니다.", "info");
+      toast(get, set, "toast.soapAgain", "info");
     } else {
       advance(set, get);
     }
@@ -456,7 +466,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (s.valveGrab !== "cyl") return;
     if (ccwRad < 0.004) return;
     if (ccwRad > 0.62) {
-      strike(get, set, "밸브를 급하게 꺾었습니다. 고압 질소가 순간 분출합니다.", true);
+      strike(get, set, "toast.fastCyl", true);
       set({ gasLeak: 1, cylOpen: 1, valveGrab: null });
       return;
     }
@@ -469,7 +479,7 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (s.screen !== "play" || s.stepId !== "open_cyl") return;
     if (pumping) {
-      strike(get, set, "밸브를 급하게 열었습니다. 고압 질소가 순간 분출합니다.", true);
+      strike(get, set, "toast.fastFlow", true);
       set({ gasLeak: 1, cylOpen: 1, valveGrab: null });
       return;
     }
@@ -482,7 +492,7 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (s.screen !== "play") return;
     if (s.stepId !== "open_cyl") {
-      toast(get, set, "지금은 이 손잡이를 조작할 단계가 아닙니다.", "warn");
+      toast(get, set, "toast.wrongHandle", "warn");
       return;
     }
     unlockAudio();
@@ -507,12 +517,12 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (s.stepId !== "open_cyl") return;
     if (s.cylOpen < 0.85) {
-      toast(get, set, "아직 부족합니다. 손잡이를 반시계 방향으로 끝까지 꺾으세요.", "warn");
+      toast(get, set, "toast.cylMore", "warn");
       return;
     }
     sfxPlay.hiss(0.35);
     set({ cylOpen: 1, minigame: null, valveGrab: null });
-    toast(get, set, "실린더 밸브 개방 완료. 고압 게이지를 확인하세요.", "ok");
+    toast(get, set, "toast.cylOpen", "ok");
     advance(set, get);
   },
 
@@ -520,11 +530,11 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (s.screen !== "play") return;
     if (s.stepId !== "open_flow" && s.stepId !== "check_flow") {
-      toast(get, set, "지금은 이 노브를 조작할 단계가 아닙니다.", "warn");
+      toast(get, set, "toast.wrongKnob", "warn");
       return;
     }
     if (s.cylOpen < 0.8) {
-      toast(get, set, "먼저 실린더 회색 손잡이를 여세요.", "warn");
+      toast(get, set, "toast.cylBeforeKnob", "warn");
       return;
     }
     unlockAudio();
@@ -547,10 +557,10 @@ export const useGame = create<GameState>((set, get) => ({
     if (s.stepId === "open_flow") {
       if (s.flowOpen > 0.8 && s.flowLpm > 2.2) {
         sfxPlay.ok();
-        toast(get, set, "유량 밸브 개방. 15 L/min으로 맞추세요.", "ok");
+        toast(get, set, "toast.flowOpen", "ok");
         advance(set, get);
       } else {
-        toast(get, set, "금색 노브를 왼쪽으로 더 돌려 여세요.", "warn");
+        toast(get, set, "toast.knobMore", "warn");
       }
       return;
     }
@@ -565,11 +575,11 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     const v = s.flowLpm;
     if (Math.abs(v - TARGET_FLOW) > 1.5) {
-      toast(get, set, `목표 유량은 ${TARGET_FLOW} L/min 입니다. 현재 ${v.toFixed(0)} L/min.`, "warn");
+      toast(get, set, "toast.flowOff", "warn", { target: TARGET_FLOW, v: v.toFixed(0) });
       return;
     }
     set({ flowLpm: TARGET_FLOW, minigame: null });
-    toast(get, set, "유량 15 L/min, 호스 흐름 안정.", "ok");
+    toast(get, set, "toast.flowOk", "ok");
     advance(set, get);
   },
 
@@ -621,6 +631,11 @@ export const useGame = create<GameState>((set, get) => ({
   closeAdmire() {
     if (get().screen !== "admire") return;
     set({ screen: "pass" });
+  },
+
+  setLang(lang) {
+    persistLang(lang);
+    set({ lang });
   },
 }));
 

@@ -3,13 +3,16 @@ import { Html, useProgress } from "@react-three/drei";
 import { Suspense } from "react";
 import * as THREE from "three";
 import { World } from "./World";
+import { useGame } from "./store";
+import { t } from "./i18n";
 
 function Loader3D() {
   const { progress } = useProgress();
+  const lang = useGame((s) => s.lang);
   return (
     <Html center wrapperClass="pointer-events-none" style={{ pointerEvents: "none" }}>
       <div className="pointer-events-none rounded-md border border-border bg-surface/90 px-3 py-2 font-mono text-xs text-muted">
-        장비 {progress.toFixed(0)}%
+        {t(lang, "app.loading", { n: progress.toFixed(0) })}
       </div>
     </Html>
   );

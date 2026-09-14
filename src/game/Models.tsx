@@ -16,6 +16,7 @@ if (typeof window !== "undefined") {
   useGLTF.preload(MODEL.outlet);
   useGLTF.preload(MODEL.chair);
   useGLTF.preload(MODEL.silence);
+  useGLTF.preload(MODEL.tangled);
 }
 
 function geometryBounds(root: THREE.Object3D) {
@@ -74,6 +75,7 @@ const LONG: Record<string, number> = {
   "/models/outlet.glb": 1.901,
   "/models/chair.glb": 1.902,
   "/models/silence.glb": 1.902,
+  "/models/tangled.glb": 1.901,
 };
 
 /** Sit the model on y=0 of this group and scale so its longest side equals `size`. */

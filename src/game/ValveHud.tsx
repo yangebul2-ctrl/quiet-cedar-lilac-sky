@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TARGET_FLOW } from "./steps";
 import { useGame } from "./store";
+import { t } from "./i18n";
 
 export function ValveHud() {
   const stepId = useGame((s) => s.stepId);
@@ -27,6 +28,7 @@ function Pad({ title, hint, children }: { title: string; hint: string; children:
 function HandlePad() {
   const open = useGame((s) => s.cylOpen);
   const grab = useGame((s) => s.valveGrab);
+  const lang = useGame((s) => s.lang);
   const dragging = useRef(false);
   const lastAng = useRef(0);
   const host = useRef<HTMLButtonElement>(null);
@@ -64,11 +66,11 @@ function HandlePad() {
   }, []);
 
   return (
-    <Pad title="실린더 밸브" hint="손잡이를 반시계 방향으로 꺾으세요. 급하게 돌리면 고압이 분출합니다.">
+    <Pad title={t(lang, "valve.cylTitle")} hint={t(lang, "valve.cylHint")}>
       <button
         ref={host}
         type="button"
-        aria-label="실린더 밸브 손잡이 반시계로 돌리기"
+        aria-label={t(lang, "valve.cylAria")}
         className={cn(
           "relative grid size-28 shrink-0 place-items-center rounded-md border border-border bg-raised touch-none",
           grab === "cyl" && "border-primary",
@@ -124,6 +126,7 @@ function KnobPad() {
   const flow = useGame((s) => s.flowLpm);
   const stepId = useGame((s) => s.stepId);
   const grab = useGame((s) => s.valveGrab);
+  const lang = useGame((s) => s.lang);
   const dragging = useRef(false);
   const lastX = useRef(0);
   const turn = -(flow / 25) * 260;
@@ -153,16 +156,12 @@ function KnobPad() {
 
   return (
     <Pad
-      title="유량 노브"
-      hint={
-        stepId === "open_flow"
-          ? "금색 톱니를 왼쪽으로 밀어 여세요. 오른쪽은 잠금입니다."
-          : "왼쪽 증가 · 오른쪽 감소. 15 L/min에서 손을 떼세요."
-      }
+      title={t(lang, "valve.knobTitle")}
+      hint={stepId === "open_flow" ? t(lang, "valve.knobOpen") : t(lang, "valve.knobSet")}
     >
       <button
         type="button"
-        aria-label="유량 노브 돌리기"
+        aria-label={t(lang, "valve.knobAria")}
         className={cn(
           "relative grid size-28 shrink-0 place-items-center rounded-md border border-border bg-raised touch-none",
           grab === "flow" && "border-primary",
@@ -198,15 +197,16 @@ function KnobPad() {
 
 function GaugePad() {
   const psi = useGame((s) => s.psi);
-  const t = Math.min(1, psi / 3000);
-  const needle = -135 + t * 270;
+  const lang = useGame((s) => s.lang);
+  const tPsi = Math.min(1, psi / 3000);
+  const needle = -135 + tPsi * 270;
   const ok = psi >= 1800 && psi <= 2200;
 
   return (
-    <Pad title="고압 게이지" hint="바늘이 2,000 PSI 근처인지 확인한 뒤 게이지를 누르세요.">
+    <Pad title={t(lang, "valve.gaugeTitle")} hint={t(lang, "valve.gaugeHint")}>
       <button
         type="button"
-        aria-label="고압 게이지 확인"
+        aria-label={t(lang, "valve.gaugeAria")}
         className="relative grid size-28 shrink-0 place-items-center rounded-md border border-border bg-raised"
         onClick={() => useGame.getState().interact("hp_gauge")}
       >
@@ -227,7 +227,7 @@ function GaugePad() {
           <circle cx="48" cy="52" r="3.5" fill="#2a2420" />
         </svg>
         <span className="absolute bottom-1 font-mono text-xs tabular-nums text-muted">
-          {psi < 40 ? "—" : Math.round(psi).toLocaleString("ko-KR")}
+          {psi < 40 ? "—" : Math.round(psi).toLocaleString(lang === "en" ? "en-US" : "ko-KR")}
         </span>
       </button>
     </Pad>
@@ -239,38 +239,37 @@ export function SoapHud() {
   const soap = useGame((s) => s.soap);
   const leak = useGame((s) => s.leak);
   const primary = useGame((s) => s.primary);
+  const lang = useGame((s) => s.lang);
   const n2 = stepId === "soap_n2";
   const hose = stepId === "soap_hose";
   if (!n2 && !hose) return null;
 
   return (
     <div className="pointer-events-auto mx-auto w-full max-w-md rounded-lg border border-border bg-surface/94 p-3">
-      <p className="text-sm font-medium text-fg">비눗물 누출 테스트 · {n2 ? "1 / 2" : "2 / 2"}</p>
-      <p className="mt-1 text-xs text-muted">
-        {n2
-          ? "질소 실린더와 레귤레이터가 맞닿은 이음새를 바르세요."
-          : "플로우미터 출력구와 호스가 맞닿은 이음새를 바르세요."}
-      </p>
+      <p className="text-sm font-medium text-fg">{t(lang, "soap.title", { n: n2 ? 1 : 2 })}</p>
+      <p className="mt-1 text-xs text-muted">{n2 ? t(lang, "soap.n2Hint") : t(lang, "soap.hoseHint")}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <JointCard
           k="n2"
-          title="질소 + 레귤레이터"
-          caption="실린더 밸브 이음"
+          title={t(lang, "soap.n2Title")}
+          caption={t(lang, "soap.n2Cap")}
           done={soap.reg}
           current={n2}
           leak={leak.reg}
+          lang={lang}
         />
         <JointCard
           k="hose"
-          title="플로우미터 + 호스"
-          caption="출력구 이음"
+          title={t(lang, "soap.hoseTitle")}
+          caption={t(lang, "soap.hoseCap")}
           done={soap.hose}
           current={hose}
           leak={leak.hose}
+          lang={lang}
         />
       </div>
       <Button size="lg" className="mt-3 w-full" onClick={primary}>
-        {n2 ? "질소·레귤레이터에 바르기" : "플로우미터·호스에 바르기"}
+        {n2 ? t(lang, "soap.n2Btn") : t(lang, "soap.hoseBtn")}
       </Button>
     </div>
   );
@@ -283,6 +282,7 @@ function JointCard({
   done,
   current,
   leak,
+  lang,
 }: {
   k: "n2" | "hose";
   title: string;
@@ -290,6 +290,7 @@ function JointCard({
   done: boolean;
   current: boolean;
   leak: boolean;
+  lang: "ko" | "en";
 }) {
   return (
     <div
@@ -322,7 +323,7 @@ function JointCard({
       </svg>
       <p className="mt-1 text-xs font-medium text-fg">{title}</p>
       <p className="text-[11px] text-subtle">
-        {leak ? "기포 발생" : done ? "기포 없음" : current ? caption : "대기"}
+        {leak ? t(lang, "soap.leak") : done ? t(lang, "soap.ok") : current ? caption : t(lang, "soap.wait")}
       </p>
     </div>
   );
